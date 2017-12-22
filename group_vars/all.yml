@@ -1,0 +1,4 @@
+---
+kubelet:
+  url: "docker://gcr.io/google_containers/hyperkube"
+  tag: "v1.8.5"

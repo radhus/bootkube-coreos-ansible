@@ -1,0 +1,8 @@
+---
+- hosts: worker
+  become: yes
+  gather_facts: False
+
+  roles:
+    - vmware.coreos-bootstrap
+    - bootkube-worker

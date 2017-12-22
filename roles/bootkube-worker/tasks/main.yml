@@ -1,0 +1,96 @@
+---
+# Based on:
+# https://github.com/coreos/matchbox/blob/master/examples/ignition/bootkube-worker.yaml
+
+- name: Enable Docker daemon
+  systemd:
+    name: docker
+    enabled: yes
+    state: started
+
+- name: Disable locksmithd
+  systemd:
+    name: locksmithd
+    masked: yes
+    state: stopped
+
+- name: Generate kubelet.path
+  template:
+    src: templates/kubelet.path.j2
+    dest: /etc/systemd/system/kubelet.path
+    mode: 0644
+  register: kubelet_path
+
+- name: Load kubelet.path
+  systemd:
+    name: kubelet.path
+    enabled: yes
+    state: started
+    daemon_reload: yes
+  when: kubelet_path.changed
+  # TODO why does this fail
+  ignore_errors: yes
+
+- name: Generate wait-for-dns.service
+  template:
+    src: templates/wait-for-dns.service.j2
+    dest: /etc/systemd/system/wait-for-dns.service
+    mode: 0644
+  register: wait_for_dns_service
+
+- name: Load wait-for-dns.service
+  systemd:
+    name: wait-for-dns.service
+    enabled: yes
+    state: started
+    daemon_reload: yes
+  when: wait_for_dns_service.changed
+
+- name: Generate kubelet.service
+  template:
+    src: templates/kubelet.service.j2
+    dest: /etc/systemd/system/kubelet.service
+    mode: 0644
+  register: kubelet_service
+
+- name: Load kubelet.service
+  systemd:
+    name: kubelet.service
+    enabled: yes
+    daemon_reload: yes
+  when: kubelet_service.changed
+
+- name: Create kubernetes config directory
+  file:
+    path: /etc/kubernetes
+    state: directory
+
+- name: Generate kubelet.env
+  template:
+    src: templates/kubelet.env.j2
+    dest: /etc/kubernetes/kubelet.env
+    mode: 0644
+
+- name: Set kubernetes needed sysctls
+  template:
+    src: templates/bootkube-sysctl.conf.j2
+    dest: /etc/sysctl.d/bootkube-sysctl.conf
+    mode: 0644
+  register: sysctl
+
+- name: Reload sysctls
+  systemd:
+    name: systemd-sysctl
+    state: restarted
+  when: sysctl.changed
+
+- name: Copy kubeconfig
+  copy:
+    src: assets/auth/kubeconfig
+    dest: /etc/kubernetes/kubeconfig
+
+- name: Start kubelet
+  systemd:
+    name: kubelet.service
+    state: started
+    daemon_reload: yes

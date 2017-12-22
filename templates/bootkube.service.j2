@@ -1,0 +1,7 @@
+[Unit]
+Description=Bootstrap a Kubernetes control plane with a temp api-server
+[Service]
+Type=simple
+WorkingDirectory=/opt/bootkube
+ExecStart=/opt/bootkube/bootkube-start
+

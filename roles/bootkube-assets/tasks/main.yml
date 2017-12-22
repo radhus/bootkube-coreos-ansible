@@ -1,0 +1,72 @@
+---
+- name: Check assets directory
+  stat:
+    path: "{{ playbook_dir }}/assets"
+  register: assets
+
+- name: Generate assets
+  block:
+    - name: Create temporary output directory
+      tempfile:
+        state: directory
+      register: tmp_output
+
+    - name: Set working variables
+      set_fact:
+        tmp_volume: /tmp/volume
+
+    - name: Generate render arguments
+      set_fact:
+        render_args:
+          - "/bootkube"
+          - "render"
+          - "--asset-dir={{ tmp_volume }}/assets"
+          - "--api-servers=https://{{ nodes.master }}:443"
+          - "--network-provider={{ networking.provider }}"
+          - "--pod-cidr={{ networking.pod_cidr }}"
+          - "--service-cidr={{ networking.service_cidr }}"
+
+    - name: Set self-hosted etcd arguments
+      set_fact:
+        etcd_args:
+          - "--experimental-self-hosted-etcd"
+      when: etcd.self_hosted
+
+    - name: Set standalone etcd arguments
+      set_fact:
+        etcd_args:
+          - "--etcd-servers=https://{{ nodes.master }}:2379"
+      when: not etcd.self_hosted
+
+    - name: Append etcd arguments to render arguments
+      set_fact:
+        render_args: "{{ render_args + etcd_args }}"
+
+    - name: Generate assets
+      docker_container:
+        name: bootkube-render
+        image: "{{ bootkube.aci }}:{{ bootkube.version }}"
+        command: "{{ render_args }}"
+        state: started
+        recreate: yes
+        detach: no
+        cleanup: yes
+        volumes:
+          - "{{ tmp_output.path }}:{{ tmp_volume }}"
+
+    - name: Move output to assets directory
+      command: "mv {{ tmp_output.path }}/assets {{ playbook_dir }}/assets"
+
+    - name: Edit flannel configuration
+      block:
+        # TODO: do something more cleaner with the YAML file...
+        - name: Set flannel configuration file
+          lineinfile:
+            path: assets/manifests/kube-flannel-cfg.yaml
+            regexp: '^        "Type": "'
+            line: "        \"Type\": \"{{ networking.flannel.backend }}\""
+      when: networking.provider == "flannel"
+
+
+  when: assets.stat.isdir is not defined
+

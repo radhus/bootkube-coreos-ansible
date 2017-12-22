@@ -1,0 +1,43 @@
+---
+- name: Create bootkube directory
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+    - /opt
+    - /opt/bootkube
+
+- name: Generate bootkube start script
+  template:
+    src: templates/bootkube-start.j2
+    dest: /opt/bootkube/bootkube-start
+    mode: 0544
+    owner: 500
+    group: 500
+
+- name: Copy kubeconfig
+  copy:
+    src: assets/auth/kubeconfig
+    dest: /etc/kubernetes/kubeconfig
+
+- name: Copy assets to single master
+  copy:
+    src: assets
+    dest: /opt/bootkube/
+
+- name: Start kubelet.service
+  systemd:
+    name: kubelet.service
+    state: started
+    daemon_reload: yes
+
+- name: Start cluster on single master
+  systemd:
+    name: bootkube.service
+    state: started
+    daemon_reload: yes
+
+- name: Create initialized placeholder
+  file:
+    path: /opt/bootkube/initialized
+    state: touch

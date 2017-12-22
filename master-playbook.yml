@@ -1,0 +1,14 @@
+---
+- hosts: localhost
+  gather_facts: False
+
+  roles:
+    - bootkube-assets
+
+- hosts: master
+  become: yes
+  gather_facts: False
+
+  roles:
+    - vmware.coreos-bootstrap
+    - bootkube-master

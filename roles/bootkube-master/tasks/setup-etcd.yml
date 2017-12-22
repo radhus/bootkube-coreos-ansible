@@ -1,0 +1,35 @@
+---
+- name: Create etcd-member dropin path
+  file:
+    path: /etc/systemd/system/etcd-member.service.d
+    state: directory
+
+- name: Generate etcd-member service dropin
+  template:
+    src: templates/40-etcd-cluster.conf.j2
+    dest: /etc/systemd/system/etcd-member.service.d/40-etcd-cluster.conf
+  register: etcd_config
+
+- name: Create etcd ssl directory
+  file:
+    path: /etc/ssl/etcd
+    state: directory
+
+- name: Copy etcd certificates
+  copy:
+    src: "{{ item }}"
+    dest: /etc/ssl/etcd/
+    owner: etcd
+    group: etcd
+    mode: 0500
+  with_fileglob:
+    - assets/tls/etcd/*
+    - assets/tls/etcd-*
+
+- name: Start etcd-member
+  systemd:
+    name: etcd-member
+    enabled: yes
+    state: restarted
+    daemon_reload: yes
+  when: etcd_config.changed
