@@ -4,7 +4,6 @@
 
 - name: Setup etcd
   include: setup-etcd.yml
-  when: not etcd.self_hosted
 
 - name: Enable Docker daemon
   systemd:

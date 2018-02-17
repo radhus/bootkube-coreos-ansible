@@ -25,22 +25,7 @@
           - "--network-provider={{ networking.provider }}"
           - "--pod-cidr={{ networking.pod_cidr }}"
           - "--service-cidr={{ networking.service_cidr }}"
-
-    - name: Set self-hosted etcd arguments
-      set_fact:
-        etcd_args:
-          - "--experimental-self-hosted-etcd"
-      when: etcd.self_hosted
-
-    - name: Set standalone etcd arguments
-      set_fact:
-        etcd_args:
           - "--etcd-servers=https://{{ nodes.master }}:2379"
-      when: not etcd.self_hosted
-
-    - name: Append etcd arguments to render arguments
-      set_fact:
-        render_args: "{{ render_args + etcd_args }}"
 
     - name: Generate assets
       docker_container:
@@ -69,4 +54,3 @@
 
 
   when: assets.stat.isdir is not defined
-
