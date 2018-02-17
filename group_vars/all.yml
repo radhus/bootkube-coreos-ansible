@@ -1,4 +1,19 @@
 ---
 kubelet:
   url: "docker://gcr.io/google_containers/hyperkube"
-  tag: "v1.8.5"
+  tag: "v1.9.2"
+
+etcd:
+  version: 3.2.11
+
+bootkube:
+  aci: quay.io/coreos/bootkube
+  version: v0.10.0
+
+networking:
+  pod_cidr: "10.2.0.0/16"
+  service_cidr: "10.3.0.0/24"
+  dns: "10.3.0.10"
+  provider: flannel
+  flannel:
+    backend: "vxlan"
