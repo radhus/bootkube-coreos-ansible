@@ -21,7 +21,7 @@
           - "/bootkube"
           - "render"
           - "--asset-dir={{ tmp_volume }}/assets"
-          - "--api-servers=https://{{ nodes.master }}:443"
+          - "--api-servers=https://{{ nodes.master }}:6443"
           - "--network-provider={{ networking.provider }}"
           - "--pod-cidr={{ networking.pod_cidr }}"
           - "--service-cidr={{ networking.service_cidr }}"
